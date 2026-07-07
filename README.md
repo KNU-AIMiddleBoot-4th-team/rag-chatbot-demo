@@ -1,7 +1,5 @@
-# RAG Chatbot Demo
-
-LangChain · OpenAI · ChromaDB · Streamlit 기반 RAG(문서 기반 질의응답) 챗봇 데모입니다.
-
+# 프로젝트 계요
+RAG 기반 기업 맞춤형 스마트 사내위키 - 법률/노무 문서 검색 챗봇
 ## 요구 사항
 
 - Python 3.10 이상

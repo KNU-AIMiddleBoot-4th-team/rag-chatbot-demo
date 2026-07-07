@@ -38,16 +38,6 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. 환경 변수 설정
-
-프로젝트 루트에 `.env` 파일을 만들고 OpenAI API 키를 넣습니다.
-
-```env
-OPENAI_API_KEY=sk-여기에-본인-키-입력
-```
-
-> ⚠️ `.env` 파일은 `.gitignore`에 등록되어 있어 git에 올라가지 않습니다. **API 키를 절대 커밋하지 마세요.**
-
 ## 실행 방법
 
 ```bash
@@ -68,11 +58,47 @@ streamlit run app.py
 
 ## 프로젝트 구조
 
+UI / Data / Server 3계층으로 관심사를 분리합니다.
+
 ```
 rag-chatbot-demo/
-├── app.py              # Streamlit 메인 앱
+├── app.py              # 진입점 (streamlit run app.py)
+├── ui/                 # 🎨 UI 계층 - Streamlit 화면
+├── rag/                # 📚 Data 계층 - 문서 로드·청킹·벡터DB (RAG)
+├── server/             # ⚙️ Server 계층 - LLM 호출·체인·설정
+├── data/               # 원본 문서 (PDF 등)
 ├── requirements.txt    # 의존성 목록
 ├── .gitignore
 ├── .env                # API 키 (직접 생성, git 제외)
 └── README.md
+```
+
+| 계층 | 폴더 | 역할 |
+|------|------|------|
+| UI | `ui/` | 화면 그리기, 사용자 입력/출력 |
+| Data | `rag/` | 문서 → 청크 → 임베딩 → 검색 |
+| Server | `server/` | LLM 호출, RAG 체인 조립, 설정 |
+
+## 커밋 컨벤션
+
+커밋 메시지는 아래 5가지 타입만 사용합니다.
+
+```
+type: 설명
+```
+
+| 타입 | 용도 |
+|------|------|
+| `feat` | 새로운 기능 추가 |
+| `fix` | 버그 수정 |
+| `chore` | 설정, 패키지, 빌드 등 잡일 |
+| `docs` | 문서 수정 (README 등) |
+| `refactor` | 기능 변경 없는 코드 구조 개선 |
+
+**예시**
+
+```
+feat: PDF 업로드 기능 추가
+fix: 벡터 검색 결과 중복 제거
+docs: 설치 방법 보완
 ```

@@ -1,6 +1,6 @@
 # --- 환경 변수 / 비밀 키 (가장 중요!) ---
 .env
-.env.*
+.env.local
 *.key
 secrets.toml
 .streamlit/secrets.toml

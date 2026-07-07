@@ -1,0 +1,58 @@
+# --- 환경 변수 / 비밀 키 (가장 중요!) ---
+.env
+.env.*
+*.key
+secrets.toml
+.streamlit/secrets.toml
+
+# --- 가상환경 ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Python 캐시 ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# --- 패키징 / 빌드 ---
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- ChromaDB / 벡터스토어 영속 데이터 ---
+chroma/
+chroma_db/
+.chroma/
+*.sqlite3
+db/
+
+# --- 업로드된 문서 / PDF 데이터 (필요시 주석 처리) ---
+# data/
+# uploads/
+*.pdf
+
+# --- 테스트 / 커버리지 ---
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- IDE / 에디터 ---
+.vscode/
+.idea/
+*.swp
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+.claude

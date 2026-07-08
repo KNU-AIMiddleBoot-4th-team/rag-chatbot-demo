@@ -8,11 +8,9 @@ def generate_answer(question: str, context: str) -> str:
     if not context.strip():
         return "제공된 문서에서 관련 내용을 확인할 수 없습니다."
 
-    answer = chain.invoke(
+    return chain.invoke(
         {
             "context": context,
             "question": question,
         }
     )
-
-    return answer

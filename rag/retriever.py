@@ -19,7 +19,12 @@ Server 팀이 매 사용자 질문마다 호출할 검색 인터페이스.
 
 from langchain_core.documents import Document
 
-from embedder import load_vectorstore, EmbeddingError
+try:
+    # server 등 외부에서 `from rag.retriever import retrieve`로 부를 때
+    from rag.embedder import load_vectorstore, EmbeddingError
+except ImportError:
+    # rag 폴더에서 단독 실행할 때 (python -m rag.retriever가 아닌 경우)
+    from embedder import load_vectorstore, EmbeddingError
 
 # 벡터DB는 프로세스 시작 시 1번만 불러오고 재사용한다.
 # (요청마다 새로 로드하면 매번 ChromaDB 연결 비용이 들어 비효율적)

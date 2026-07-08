@@ -25,10 +25,19 @@ from langchain_chroma import Chroma
 
 load_dotenv()
 
-OPENAI_ROUTER_KEY = os.getenv("OPENAI_ROUTER_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "openai/text-embedding-3-small")
-PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
+
+# 벡터DB 경로는 실행 위치가 아니라 이 파일(rag/) 기준으로 고정한다.
+# server를 repo 루트에서 띄워도 rag/chroma_db를 정확히 찾도록 하기 위함.
+_RAG_DIR = os.path.dirname(os.path.abspath(__file__))
+_persist_dir_env = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
+PERSIST_DIR = (
+    _persist_dir_env
+    if os.path.isabs(_persist_dir_env)
+    else os.path.normpath(os.path.join(_RAG_DIR, _persist_dir_env))
+)
 COLLECTION_NAME = os.getenv("CHROMA_COLLECTION_NAME", "labor_law")
 
 
@@ -46,16 +55,16 @@ def get_embedding_function() -> OpenAIEmbeddings:
     모델명에는 provider 접두사(openai/)가 필요하다.
 
     Raises:
-        EmbeddingError: OPENAI_ROUTER_KEY가 없을 경우
+        EmbeddingError: OPENAI_API_KEY가 없을 경우
     """
-    if not OPENAI_ROUTER_KEY:
+    if not OPENAI_API_KEY:
         raise EmbeddingError(
-            "환경변수 OPENAI_ROUTER_KEY가 설정되어 있지 않습니다. "
+            "환경변수 OPENAI_API_KEY가 설정되어 있지 않습니다. "
             "임베딩은 OpenRouter를 경유하므로 OpenRouter API 키가 필요합니다. .env를 확인하세요."
         )
     return OpenAIEmbeddings(
         model=EMBEDDING_MODEL,
-        api_key=OPENAI_ROUTER_KEY,
+        api_key=OPENAI_API_KEY,
         base_url=OPENROUTER_BASE_URL,
     )
 

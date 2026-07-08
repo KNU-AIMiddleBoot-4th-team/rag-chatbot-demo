@@ -16,8 +16,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 LAW_API_KEY = os.getenv("LAW_API_KEY")
-SEARCH_URL = "https://www.law.go.kr/DRF/lawSearch.do"
-SERVICE_URL = "https://www.law.go.kr/DRF/lawService.do"
+SEARCH_URL = os.getenv("LAW_SEARCH_URL")
+SERVICE_URL = os.getenv("LAW_SERVICE_URL")
 
 
 class LawApiError(Exception):

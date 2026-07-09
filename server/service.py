@@ -1,6 +1,11 @@
 from langchain_core.documents import Document
 from rag.retriever import retrieve
 from server.chain import chain
+from server.query import expand_query
+
+
+SEARCH_TOP_K_PER_QUERY = 3
+MAX_CONTEXT_DOCUMENTS = 6
 
 
 def _get_metadata_value(document: Document, *keys: str) -> str:
@@ -28,12 +33,40 @@ def _format_context(documents: list[Document]) -> str:
     return "\n\n---\n\n".join(context_blocks)
 
 
+def _deduplicate_documents(documents: list[Document]) -> list[Document]:
+    unique_documents = []
+    seen = set()
+
+    for document in documents:
+        key = (
+            _get_metadata_value(document, "법령명"),
+            _get_metadata_value(document, "조문번호"),
+            document.page_content[:120],
+        )
+        if key in seen:
+            continue
+
+        seen.add(key)
+        unique_documents.append(document)
+
+    return unique_documents
+
+
+def _retrieve_documents(question: str) -> list[Document]:
+    documents = []
+
+    for query in expand_query(question):
+        documents.extend(retrieve(query, k=SEARCH_TOP_K_PER_QUERY))
+
+    return _deduplicate_documents(documents)[:MAX_CONTEXT_DOCUMENTS]
+
+
 def generate_answer(question: str, context: str = "") -> str:
     if not question.strip():
         raise ValueError("question은 비어 있을 수 없습니다.")
 
     if not context.strip():
-        documents = retrieve(question, k=4)
+        documents = _retrieve_documents(question)
         context = _format_context(documents)
 
     if not context.strip():

@@ -25,7 +25,7 @@ from langchain_chroma import Chroma
 
 load_dotenv()
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPEN_ROUTER_KEY = os.getenv("OPEN_ROUTER_KEY")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "openai/text-embedding-3-small")
 
@@ -55,16 +55,16 @@ def get_embedding_function() -> OpenAIEmbeddings:
     모델명에는 provider 접두사(openai/)가 필요하다.
 
     Raises:
-        EmbeddingError: OPENAI_API_KEY가 없을 경우
+        EmbeddingError: OPEN_ROUTER_KEY가 없을 경우
     """
-    if not OPENAI_API_KEY:
+    if not OPEN_ROUTER_KEY:
         raise EmbeddingError(
-            "환경변수 OPENAI_API_KEY가 설정되어 있지 않습니다. "
+            "환경변수 OPEN_ROUTER_KEY가 설정되어 있지 않습니다. "
             "임베딩은 OpenRouter를 경유하므로 OpenRouter API 키가 필요합니다. .env를 확인하세요."
         )
     return OpenAIEmbeddings(
         model=EMBEDDING_MODEL,
-        api_key=OPENAI_API_KEY,
+        api_key=OPEN_ROUTER_KEY,
         base_url=OPENROUTER_BASE_URL,
     )
 

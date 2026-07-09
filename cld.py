@@ -490,7 +490,7 @@ else:
             right: 0 !important;
             bottom: 0 !important;
             height: 220px !important;
-            background: linear-gradient(to top, #ffffff 82%, rgba(255, 255, 255, 0) 100%) !important;
+            background: linear-gradient(to top, #ffffff 55%, rgba(255, 255, 255, 0.9) 75%, rgba(255, 255, 255, 0) 100%) !important;
             z-index: 900 !important;
             pointer-events: none !important;
         }
@@ -570,14 +570,12 @@ components.html(
             try {
                 const doc = window.parent.document;
                 const ta = doc.querySelector('[data-testid="stChatInput"] textarea');
-                if (ta) {
+                if (ta && doc.activeElement !== ta) {
                     ta.focus();
                 }
             } catch (e) {}
         }
-        [50, 150, 350, 700].forEach(function (delay) {
-            setTimeout(focusChatInput, delay);
-        });
+        setTimeout(focusChatInput, 200);
     })();
     </script>
     """,

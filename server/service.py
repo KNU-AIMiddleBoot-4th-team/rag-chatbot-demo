@@ -1,5 +1,5 @@
 from langchain_core.documents import Document
-from rag.retriever import retrieve
+from rag.retriever import retrieve_with_score
 from server.chain import chain
 from server.query import expand_query
 
@@ -52,13 +52,33 @@ def _deduplicate_documents(documents: list[Document]) -> list[Document]:
     return unique_documents
 
 
+def _get_document_key(document: Document) -> tuple[str, str]:
+    return (str(document.metadata), document.page_content[:120])
+
+
+def _rank_documents_by_score(
+    document_scores: list[tuple[Document, float]]
+) -> list[Document]:
+    best_documents: dict[tuple[str, str], tuple[Document, float]] = {}
+
+    for document, score in document_scores:
+        key = _get_document_key(document)
+        current = best_documents.get(key)
+
+        if current is None or score < current[1]:
+            best_documents[key] = (document, score)
+
+    ranked_documents = sorted(best_documents.values(), key=lambda item: item[1])
+    return [document for document, _ in ranked_documents]
+
+
 def _retrieve_documents(question: str) -> list[Document]:
-    documents = []
+    document_scores = []
 
     for query in expand_query(question):
-        documents.extend(retrieve(query, k=SEARCH_TOP_K_PER_QUERY))
+        document_scores.extend(retrieve_with_score(query, k=SEARCH_TOP_K_PER_QUERY))
 
-    return _deduplicate_documents(documents)[:MAX_CONTEXT_DOCUMENTS]
+    return _rank_documents_by_score(document_scores)[:MAX_CONTEXT_DOCUMENTS]
 
 
 def generate_answer(question: str, context: str = "") -> str:

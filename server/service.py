@@ -33,25 +33,6 @@ def _format_context(documents: list[Document]) -> str:
     return "\n\n---\n\n".join(context_blocks)
 
 
-def _deduplicate_documents(documents: list[Document]) -> list[Document]:
-    unique_documents = []
-    seen = set()
-
-    for document in documents:
-        key = (
-            _get_metadata_value(document, "법령명"),
-            _get_metadata_value(document, "조문번호"),
-            document.page_content[:120],
-        )
-        if key in seen:
-            continue
-
-        seen.add(key)
-        unique_documents.append(document)
-
-    return unique_documents
-
-
 def _get_document_key(document: Document) -> tuple[str, str]:
     return (str(document.metadata), document.page_content[:120])
 

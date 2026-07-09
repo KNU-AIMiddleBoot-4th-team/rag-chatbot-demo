@@ -15,9 +15,16 @@ collector.py → preprocessor.py → chunker.py 를 순서대로 실행하는 �
 
 from langchain_core.documents import Document
 
-from collector import fetch_law_json, fetch_multiple_laws, LawApiError
-from preprocessor import parse_law_to_documents, parse_multiple_laws
-from chunker import chunk_documents
+try:
+    # server 등 외부에서 `from rag.pipeline import build_chunks`로 부를 때
+    from rag.collector import fetch_law_json, fetch_multiple_laws, LawApiError
+    from rag.preprocessor import parse_law_to_documents, parse_multiple_laws
+    from rag.chunker import chunk_documents
+except ImportError:
+    # rag 폴더에서 단독 실행할 때
+    from collector import fetch_law_json, fetch_multiple_laws, LawApiError
+    from preprocessor import parse_law_to_documents, parse_multiple_laws
+    from chunker import chunk_documents
 
 
 def build_chunks(

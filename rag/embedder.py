@@ -155,7 +155,10 @@ def load_vectorstore(
 
 
 if __name__ == "__main__":
-    from pipeline import build_chunks
+    try:
+        from rag.pipeline import build_chunks
+    except ImportError:
+        from pipeline import build_chunks
 
     LAW_LIST = ["근로기준법", "최저임금법", "근로자퇴직급여 보장법"]
 

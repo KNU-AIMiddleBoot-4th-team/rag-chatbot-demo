@@ -141,7 +141,10 @@ def parse_multiple_laws(law_data_map: dict[str, dict]) -> list[Document]:
 
 
 if __name__ == "__main__":
-    from collector import fetch_law_json
+    try:
+        from rag.collector import fetch_law_json
+    except ImportError:
+        from collector import fetch_law_json
 
     raw = fetch_law_json("최저임금법")
     docs = parse_law_to_documents("최저임금법", raw)

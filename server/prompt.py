@@ -22,10 +22,13 @@ prompt = ChatPromptTemplate.from_messages(
 [참고 문서]
 {context}
 
+[이전 대화]
+{history}
+
 [사용자 질문]
 {question}
 
-위 참고 문서를 근거로 질문에 답변해 주세요.
+위 참고 문서와 이전 대화 맥락을 근거로 현재 질문에 답변해 주세요.
 """,
         ),
     ]

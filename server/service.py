@@ -1,7 +1,7 @@
 from langchain_core.documents import Document
 from rag.retriever import retrieve_with_score
 from server.chain import chain
-from server.query import expand_query
+from server.query import expand_query, format_history, rewrite_question
 
 
 SEARCH_TOP_K_PER_QUERY = 3
@@ -62,12 +62,17 @@ def _retrieve_documents(question: str) -> list[Document]:
     return _rank_documents_by_score(document_scores)[:MAX_CONTEXT_DOCUMENTS]
 
 
-def generate_answer(question: str, context: str = "") -> str:
+def generate_answer(
+    question: str,
+    context: str = "",
+    history: list[dict[str, str]] | None = None,
+) -> str:
     if not question.strip():
         raise ValueError("question은 비어 있을 수 없습니다.")
 
     if not context.strip():
-        documents = _retrieve_documents(question)
+        search_question = rewrite_question(question, history)
+        documents = _retrieve_documents(search_question)
         context = _format_context(documents)
 
     if not context.strip():
@@ -77,5 +82,6 @@ def generate_answer(question: str, context: str = "") -> str:
         {
             "context": context,
             "question": question,
+            "history": format_history(history),
         }
     )

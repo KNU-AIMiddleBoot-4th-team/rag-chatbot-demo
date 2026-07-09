@@ -6,6 +6,29 @@ from starlette.routing import Route
 from server.service import generate_answer
 
 
+def _validate_history(history):
+    if history is None:
+        return []
+    if not isinstance(history, list):
+        raise ValueError("history must be a list.")
+
+    validated_history = []
+    for message in history:
+        if not isinstance(message, dict):
+            raise ValueError("history items must be objects.")
+
+        role = message.get("role", "")
+        content = message.get("content", "")
+        if role not in {"user", "assistant"} or not isinstance(content, str):
+            raise ValueError(
+                "history items must have role=user|assistant and string content."
+            )
+
+        validated_history.append({"role": role, "content": content})
+
+    return validated_history
+
+
 async def health(request):
     return JSONResponse({"status": "ok"})
 
@@ -18,6 +41,7 @@ async def answer(request):
 
     question = payload.get("question", "")
     context = payload.get("context", "")
+    history = payload.get("history", [])
 
     if not isinstance(question, str) or not isinstance(context, str):
         return JSONResponse(
@@ -26,7 +50,10 @@ async def answer(request):
         )
 
     try:
-        result = await run_in_threadpool(generate_answer, question, context)
+        validated_history = _validate_history(history)
+        result = await run_in_threadpool(
+            generate_answer, question, context, validated_history
+        )
     except ValueError as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
     except Exception:

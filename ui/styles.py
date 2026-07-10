@@ -93,15 +93,14 @@ def _chat_state_layout() -> str:
         .block-container { padding-bottom: 210px !important; }
         /* 입력창은 Streamlit 기본 하단 고정을 그대로 사용한다(직접 재배치하지 않음).
            직접 fixed 로 옮기면 Streamlit 하단 컨테이너의 변형과 충돌해 박스가 잘렸다. */
-        /* 추천질문(FAQ)만 메시지 위에 떠 있으므로, 불투명 흰 배경을 깔아 뒤 대화가 비치지 않게 한다.
-           (입력창은 하단 flex 영역이라 뒤에 메시지가 없어 별도 처리 불필요) */
+        /* 추천질문(FAQ)을 입력창 바로 위에 고정한다. */
         .st-key-faq_area {
             position: fixed !important;
-            bottom: 126px !important;
+            bottom: 135px !important;
             top: auto !important;
             left: 50% !important;
             transform: translateX(-50%) !important;
-            width: min(720px, calc(100% - 32px)) !important;
+            width: min(704px, calc(100% - 40px)) !important;
             z-index: 997 !important;
             background: #ffffff !important;
             padding: 0px 8px 18px 8px !important;

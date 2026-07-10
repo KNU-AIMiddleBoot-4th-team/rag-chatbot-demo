@@ -1,9 +1,9 @@
 from starlette.applications import Starlette
 from starlette.concurrency import run_in_threadpool
-from starlette.responses import JSONResponse, StreamingResponse
+from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-from server.service import generate_answer, generate_answer_stream
+from server.service import generate_answer
 
 
 def _validate_history(history):
@@ -65,44 +65,10 @@ async def answer(request):
     return JSONResponse({"answer": result})
 
 
-async def answer_stream(request):
-    try:
-        payload = await request.json()
-    except ValueError:
-        return JSONResponse({"error": "Invalid JSON body."}, status_code=400)
-
-    question = payload.get("question", "")
-    context = payload.get("context", "")
-    history = payload.get("history", [])
-
-    if not isinstance(question, str) or not isinstance(context, str):
-        return JSONResponse(
-            {"error": "question and context must be strings."},
-            status_code=400,
-        )
-
-    try:
-        validated_history = _validate_history(history)
-    except ValueError as exc:
-        return JSONResponse({"error": str(exc)}, status_code=400)
-
-    if not question.strip():
-        return JSONResponse({"error": "question must not be empty."}, status_code=400)
-
-    def stream():
-        try:
-            yield from generate_answer_stream(question, context, validated_history)
-        except Exception:
-            yield "\n[ERROR] Failed to generate streamed answer."
-
-    return StreamingResponse(stream(), media_type="text/plain; charset=utf-8")
-
-
 app = Starlette(
     debug=False,
     routes=[
         Route("/health", health, methods=["GET"]),
         Route("/answer", answer, methods=["POST"]),
-        Route("/answer/stream", answer_stream, methods=["POST"]),
     ],
 )

@@ -79,16 +79,18 @@ def handle_user_turn(user_input: str | None) -> None:
                 _typewriter(itertools.chain([first_chunk], stream))
             )
 
-            # 답변을 먼저 세션에 저장한 뒤 추천 질문 갱신
+            # 답변 저장 → 추천 질문 수집 → 처리 완료 → FAQ 영역 복원
             st.session_state.messages.append({"role": "assistant", "content": answer})
-
             suggestions = suggest_future.result(timeout=10)
             if suggestions:
                 st.session_state.faq_questions = suggestions
-                st.rerun()
+            st.session_state.is_processing = False
+            st.rerun()
 
         except Exception as exc:  # noqa: BLE001
             print(f"[chat] 답변 생성 실패: {exc!r}")
             answer = "⚠️ 답변을 생성하는 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요."
             st.markdown(answer)
             st.session_state.messages.append({"role": "assistant", "content": answer})
+            st.session_state.is_processing = False
+            st.rerun()

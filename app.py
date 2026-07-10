@@ -26,6 +26,8 @@ if "queued_question" not in st.session_state:
     st.session_state.queued_question = None  # FAQ 버튼으로 예약된 질문
 if "faq_questions" not in st.session_state:
     st.session_state.faq_questions = None    # 동적 추천 질문 (None이면 고정 FAQ 사용)
+if "is_processing" not in st.session_state:
+    st.session_state.is_processing = False   # 질문 처리 중이면 True
 
 # ── 입력 먼저 읽기 ───────────────────────────────
 # 이번 렌더가 "대화 화면"인지 입력 유무로 미리 판단해야 레이아웃이 튀지 않고,
@@ -37,6 +39,10 @@ if st.session_state.queued_question:
 
 chat_mode = bool(st.session_state.messages) or bool(user_input)
 
+# 입력이 들어온 순간 처리 중으로 표시 — render_faq() 전에 세팅해야 이번 렌더에 반영됨
+if user_input:
+    st.session_state.is_processing = True
+
 # ── 스타일 ──────────────────────────────────────
 inject_base_styles()
 inject_layout_styles(chat_mode)
@@ -47,8 +53,9 @@ if not chat_mode:
     render_welcome()
 
 render_history()
-# 추천질문(FAQ)은 시작 화면과 대화 화면 모두에서 노출한다(위치만 레이아웃에서 달라짐).
-render_faq()
+# 처리 중이 아닐 때만 FAQ 렌더: 초기 화면은 고정 FAQ, 답변 후엔 동적 추천
+if not st.session_state.is_processing:
+    render_faq()
 render_attach()
 render_focus_script()
 

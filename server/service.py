@@ -6,6 +6,7 @@ from server.query import expand_query, format_history, rewrite_question
 
 SEARCH_TOP_K_PER_QUERY = 3
 MAX_CONTEXT_DOCUMENTS = 6
+NO_RELEVANT_CONTEXT_MESSAGE = "제공된 문서에서 관련 내용을 확인할 수 없습니다."
 
 
 def _get_metadata_value(document: Document, *keys: str) -> str:
@@ -62,6 +63,29 @@ def _retrieve_documents(question: str) -> list[Document]:
     return _rank_documents_by_score(document_scores)[:MAX_CONTEXT_DOCUMENTS]
 
 
+def _build_chain_inputs(
+    question: str,
+    context: str = "",
+    history: list[dict[str, str]] | None = None,
+) -> dict[str, str] | None:
+    if not question.strip():
+        raise ValueError("question must not be empty.")
+
+    if not context.strip():
+        search_question = rewrite_question(question, history)
+        documents = _retrieve_documents(search_question)
+        context = _format_context(documents)
+
+    if not context.strip():
+        return None
+
+    return {
+        "context": context,
+        "question": question,
+        "history": format_history(history),
+    }
+
+
 def generate_answer(
     question: str,
     context: str = "",
@@ -76,7 +100,7 @@ def generate_answer(
         context = _format_context(documents)
 
     if not context.strip():
-        return "제공된 문서에서 관련 내용을 확인할 수 없습니다."
+        return NO_RELEVANT_CONTEXT_MESSAGE
 
     return chain.invoke(
         {
@@ -85,3 +109,18 @@ def generate_answer(
             "history": format_history(history),
         }
     )
+
+
+def generate_answer_stream(
+    question: str,
+    context: str = "",
+    history: list[dict[str, str]] | None = None,
+):
+    chain_inputs = _build_chain_inputs(question, context, history)
+    if chain_inputs is None:
+        yield NO_RELEVANT_CONTEXT_MESSAGE
+        return
+
+    for chunk in chain.stream(chain_inputs):
+        if chunk:
+            yield str(chunk)

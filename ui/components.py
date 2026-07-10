@@ -42,11 +42,6 @@ def render_welcome() -> None:
     )
 
 
-def render_bottom_backdrop() -> None:
-    """하단 입력창 뒤로 자연스럽게 흐려지는 배경 그라데이션."""
-    st.markdown('<div class="bottom-backdrop"></div>', unsafe_allow_html=True)
-
-
 def render_faq() -> None:
     """자주 묻는 질문 버튼. 클릭 시 다음 실행에서 질문으로 처리된다."""
     with st.container(key="faq_area"):

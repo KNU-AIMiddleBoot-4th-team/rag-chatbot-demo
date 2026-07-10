@@ -10,7 +10,6 @@ import streamlit as st
 from ui.styles import inject_base_styles, inject_layout_styles
 from ui.components import (
     render_attach,
-    render_bottom_backdrop,
     render_faq,
     render_focus_script,
     render_logo_header,
@@ -46,7 +45,7 @@ if not chat_mode:
     render_welcome()
 
 render_history()
-render_bottom_backdrop()
+# 추천질문(FAQ)은 시작 화면과 대화 화면 모두에서 노출한다(위치만 레이아웃에서 달라짐).
 render_faq()
 render_attach()
 render_focus_script()

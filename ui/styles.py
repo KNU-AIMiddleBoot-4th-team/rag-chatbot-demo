@@ -31,14 +31,19 @@ def inject_base_styles() -> None:
         [data-testid="stChatInput"] { background-color: #ffffff !important; border: 1.5px solid #0184ff !important; border-radius: 24px !important; box-shadow: 0 8px 24px rgba(1, 132, 255, 0.18) !important; overflow: visible !important; padding: 6px 18px !important; z-index: 99992 !important; pointer-events: auto !important; transition: all 0.2s ease !important; }
         [data-testid="stChatInput"]:focus-within { border-color: #3434e0 !important; box-shadow: 0 8px 32px rgba(52, 52, 224, 0.3) !important; }
         [data-testid="stChatInput"] > div, [data-testid="stChatInput"] > div > div { background-color: transparent !important; border: none !important; box-shadow: none !important; border-radius: 0 !important; overflow: visible !important; }
+        /* Streamlit 은 입력이 생기면 [textarea 행]과 [전송버튼 행]을 세로 2단으로 벌려 박스가 커진다.
+           한 줄로 유지: 컨테이너를 가로(row)로 두고, textarea 행이 남는 폭을 채우게(flex:1) 한다.
+           그러면 텍스트가 실제로 여러 줄로 넘칠 때만 textarea 가 세로로 커진다. */
+        [data-testid="stChatInput"] > div > div { flex-direction: row !important; align-items: center !important; }
+        [data-testid="stChatInput"] > div > div > div:first-child { flex: 1 1 auto !important; min-width: 0 !important; }
         [data-testid="stChatInput"] textarea { background-color: transparent !important; color: #191F28 !important; caret-color: #3434e0 !important; font-size: 1rem !important; padding-left: 55px !important; }
         [data-testid="stChatInputSubmitButton"] { background-color: transparent !important; border: none !important; box-shadow: none !important; }
         [data-testid="stChatInputSubmitButton"]:not(:disabled), [data-testid="stChatInputSubmitButton"]:not(:disabled) svg { color: #3434e0 !important; fill: #3434e0 !important; }
         [data-testid="stChatInputSubmitButton"]:not(:disabled):hover { background-color: rgba(52, 52, 224, 0.08) !important; opacity: 0.9 !important; }
         [data-testid="stChatInputSubmitButton"]:disabled, [data-testid="stChatInputSubmitButton"]:disabled svg, [data-testid="stChatInputSubmitButton"][aria-disabled="true"], [data-testid="stChatInputSubmitButton"][aria-disabled="true"] svg { color: #c0c4cc !important; fill: #c0c4cc !important; }
-        .st-key-faq_area button { background-color: #ffffff !important; border: 1px solid #E5E8EB !important; color: #0184ff !important; border-radius: 12px !important; padding: 16px 20px !important; font-size: 0.85rem !important; font-weight: 600 !important; text-align: left !important; width: 100% !important; box-shadow: 0 2px 8px rgba(0,0,0,0.02) !important; transition: all 0.15s ease !important; white-space: normal !important; height: auto !important; line-height: 1.4 !important; }
+        /* 3개 카드 높이 통일: 가장 긴 카드(3줄)보다 큰 고정 높이를 주고, 텍스트를 세로 중앙에 둔다. */
+        .st-key-faq_area button { background-color: #ffffff !important; border: 1px solid #E5E8EB !important; color: #0184ff !important; border-radius: 12px !important; padding: 14px 20px !important; font-size: 0.85rem !important; font-weight: 600 !important; text-align: left !important; width: 100% !important; box-shadow: 0 2px 8px rgba(0,0,0,0.02) !important; transition: all 0.15s ease !important; white-space: normal !important; height: 96px !important; line-height: 1.4 !important; display: flex !important; align-items: center !important; justify-content: flex-start !important; }
         .st-key-faq_area button:hover { border-color: #0184ff !important; color: #3434e0 !important; background-color: rgba(1, 132, 255, 0.03) !important; box-shadow: 0 4px 12px rgba(1, 132, 255, 0.1) !important; }
-        .bottom-backdrop { display: none; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -67,18 +72,6 @@ def _empty_state_layout() -> str:
         }
         @media (min-width: 840px) { .st-key-attach_area { margin-left: -375px !important; } }
         @media (max-width: 839px) { .st-key-attach_area { margin-left: calc(-50vw + 40px) !important; } }
-        .faq-fixed-label {
-            position: fixed;
-            bottom: calc(45% - 45px);
-            top: auto;
-            left: 50%;
-            transform: translateX(-50%);
-            width: min(800px, calc(100% - 40px));
-            font-weight: 700;
-            color: #3434e0;
-            font-size: 0.85rem;
-            z-index: 997;
-        }
         .st-key-faq_area {
             position: fixed;
             bottom: calc(45% - 145px);
@@ -93,59 +86,33 @@ def _empty_state_layout() -> str:
 
 
 def _chat_state_layout() -> str:
-    """대화 중: 입력창을 하단에 고정하고 대화 내용이 위로 쌓이게 하는 레이아웃."""
+    """대화 중: 입력창을 화면 맨 아래에 고정하고, 추천질문을 그 바로 위에 띄운다."""
     return """
         <style>
-        [data-testid="stChatInput"] {
+        /* 하단에 [추천질문 + 입력창]이 고정되므로 마지막 메시지가 가리지 않게 여백 확보 */
+        .block-container { padding-bottom: 210px !important; }
+        /* 입력창은 Streamlit 기본 하단 고정을 그대로 사용한다(직접 재배치하지 않음).
+           직접 fixed 로 옮기면 Streamlit 하단 컨테이너의 변형과 충돌해 박스가 잘렸다. */
+        /* 추천질문(FAQ)을 입력창 바로 위에 고정한다. */
+        .st-key-faq_area {
             position: fixed !important;
-            bottom: 120px !important;
+            bottom: 135px !important;
             top: auto !important;
             left: 50% !important;
             transform: translateX(-50%) !important;
-            width: min(800px, calc(100% - 40px)) !important;
-            margin-left: 0 !important;
+            width: min(704px, calc(100% - 40px)) !important;
+            z-index: 997 !important;
         }
+        /* ➕ 첨부 버튼을 기본 입력창(폭 704px) 좌측 안쪽, 전송버튼과 같은 높이에 겹쳐 배치한다. */
         .st-key-attach_area {
             position: fixed !important;
-            bottom: 128px !important;
+            bottom: 66px !important;
             top: auto !important;
             left: 50% !important;
             transform: none !important;
         }
-        @media (min-width: 840px) { .st-key-attach_area { margin-left: -375px !important; } }
-        @media (max-width: 839px) { .st-key-attach_area { margin-left: calc(-50vw + 40px) !important; } }
-        .faq-fixed-label {
-            position: fixed;
-            bottom: 90px;
-            top: auto;
-            left: 50%;
-            transform: translateX(-50%);
-            width: min(800px, calc(100% - 40px));
-            font-weight: 700;
-            color: #3434e0;
-            font-size: 0.85rem;
-            z-index: 997;
-        }
-        .st-key-faq_area {
-            position: fixed;
-            bottom: 10px;
-            top: auto;
-            left: 50%;
-            transform: translateX(-50%);
-            width: min(800px, calc(100% - 40px));
-            z-index: 997;
-        }
-        .bottom-backdrop {
-            display: block !important;
-            position: fixed !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            height: 220px !important;
-            background: linear-gradient(to top, #ffffff 82%, rgba(255, 255, 255, 0) 100%) !important;
-            z-index: 900 !important;
-            pointer-events: none !important;
-        }
+        @media (min-width: 768px) { .st-key-attach_area { margin-left: -342px !important; } }
+        @media (max-width: 767px) { .st-key-attach_area { margin-left: calc(-50vw + 32px) !important; } }
         </style>
         """
 

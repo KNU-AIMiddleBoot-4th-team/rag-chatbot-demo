@@ -8,6 +8,24 @@ from server.llm import llm
 
 MAX_EXPANDED_QUERIES = 5
 MAX_HISTORY_MESSAGES = 10
+SUGGEST_COUNT = 3
+
+suggest_prompt = ChatPromptTemplate.from_template(
+    """
+사용자 질문: {question}
+참고한 법 조문: {context}
+
+위 질문과 법 조문을 바탕으로 사용자가 이어서 물어볼 만한 후속 질문 {count}개를 제안한다.
+
+규칙:
+- 질문은 짧고 자연스러운 한국어 구어체로 작성한다 (20자 이내 권장).
+- 법률/노무 주제를 벗어나지 않는다.
+- 각 질문은 한 줄에 하나씩만 작성한다.
+- 번호, 따옴표, 설명은 쓰지 않는다.
+"""
+)
+
+suggest_chain = suggest_prompt | llm | StrOutputParser()
 
 query_prompt = ChatPromptTemplate.from_template(
     """
@@ -96,6 +114,31 @@ def expand_query(question: str) -> list[str]:
             break
 
     return queries
+
+
+def suggest_followups(question: str, context: str) -> list[str]:
+    """질문과 검색된 법 조문을 바탕으로 후속 추천 질문 3개를 반환한다."""
+    if not question.strip():
+        return []
+
+    try:
+        result = suggest_chain.invoke({
+            "question": question,
+            "context": context[:1500],
+            "count": SUGGEST_COUNT,
+        })
+    except Exception:
+        return []
+
+    suggestions = []
+    for line in result.splitlines():
+        q = _normalize_query(line)
+        if q:
+            suggestions.append(q)
+        if len(suggestions) >= SUGGEST_COUNT:
+            break
+
+    return suggestions
 
 
 def rewrite_question(question: str, history: list[dict[str, str]] | None = None) -> str:

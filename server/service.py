@@ -1,7 +1,11 @@
+from concurrent.futures import Future, ThreadPoolExecutor
+
 from langchain_core.documents import Document
 from rag.retriever import retrieve_with_score
 from server.chain import chain
-from server.query import expand_query, format_history, rewrite_question
+from server.query import expand_query, format_history, rewrite_question, suggest_followups
+
+_suggest_executor = ThreadPoolExecutor(max_workers=1)
 
 
 SEARCH_TOP_K_PER_QUERY = 3
@@ -67,7 +71,8 @@ def _build_chain_inputs(
     question: str,
     context: str = "",
     history: list[dict[str, str]] | None = None,
-) -> dict[str, str] | None:
+) -> tuple[dict[str, str] | None, str]:
+    """chain 입력 dict와 확정된 context 문자열을 함께 반환한다."""
     if not question.strip():
         raise ValueError("question must not be empty.")
 
@@ -77,13 +82,13 @@ def _build_chain_inputs(
         context = _format_context(documents)
 
     if not context.strip():
-        return None
+        return None, ""
 
     return {
         "context": context,
         "question": question,
         "history": format_history(history),
-    }
+    }, context
 
 
 def generate_answer(
@@ -111,12 +116,25 @@ def generate_answer(
     )
 
 
+def resolve_context(
+    question: str,
+    history: list[dict[str, str]] | None = None,
+) -> str:
+    """벡터 검색까지만 수행하고 context 문자열만 반환한다.
+
+    UI에서 context를 미리 뽑아 start_suggest_followups에 넘길 때 사용한다.
+    """
+    search_question = rewrite_question(question, history)
+    documents = _retrieve_documents(search_question)
+    return _format_context(documents)
+
+
 def generate_answer_stream(
     question: str,
     context: str = "",
     history: list[dict[str, str]] | None = None,
 ):
-    chain_inputs = _build_chain_inputs(question, context, history)
+    chain_inputs, resolved_context = _build_chain_inputs(question, context, history)
     if chain_inputs is None:
         yield NO_RELEVANT_CONTEXT_MESSAGE
         return
@@ -124,3 +142,12 @@ def generate_answer_stream(
     for chunk in chain.stream(chain_inputs):
         if chunk:
             yield str(chunk)
+
+
+def start_suggest_followups(question: str, context: str) -> Future:
+    """후속 추천 질문 생성을 백그라운드에서 시작하고 Future를 반환한다.
+
+    답변 스트리밍과 동시에 실행되므로 응답 시간에 영향을 주지 않는다.
+    caller가 Future.result()로 list[str]을 꺼내 쓴다.
+    """
+    return _suggest_executor.submit(suggest_followups, question, context)

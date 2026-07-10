@@ -43,15 +43,17 @@ def render_welcome() -> None:
 
 
 def render_faq() -> None:
-    """자주 묻는 질문 버튼. 클릭 시 다음 실행에서 질문으로 처리된다."""
+    """자주 묻는 질문 버튼. 대화 후에는 동적 추천 질문으로 교체된다."""
+    questions = st.session_state.get("faq_questions") or FAQ_QUESTIONS
     with st.container(key="faq_area"):
         faq_cols = st.columns(3, gap="medium")
-        for i, question in enumerate(FAQ_QUESTIONS):
+        for i, question in enumerate(questions):
             with faq_cols[i]:
-                if st.button(question, key=f"faq_{i}", use_container_width=True):
-                    # 입력을 화면 상단에서 먼저 읽으므로, 예약 후 곧바로 rerun 해야
-                    # 이번이 아닌 다음 실행 시작 시점에 질문으로 잡힌다.
-                    st.session_state.queued_question = question.split(" ", 1)[1]
+                # 이모지 접두사가 없는 동적 질문은 그대로, 고정 질문은 이모지 제거
+                label = question if question in FAQ_QUESTIONS else question
+                if st.button(label, key=f"faq_{i}", use_container_width=True):
+                    clean = question.split(" ", 1)[1] if question in FAQ_QUESTIONS else question
+                    st.session_state.queued_question = clean
                     st.rerun()
 
 

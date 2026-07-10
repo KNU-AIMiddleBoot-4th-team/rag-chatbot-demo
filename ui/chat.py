@@ -49,6 +49,7 @@ def handle_user_turn(user_input: str | None) -> None:
 
     질문 말풍선을 먼저 그리고, 바로 아래 assistant 말풍선에서 검색 동안 스피너를 돌린 뒤
     최종 답변을 토큰 단위로 실시간 출력한다.
+    답변 스트리밍 시작과 동시에 후속 추천 질문을 백그라운드에서 생성한다.
     (레이아웃 모드는 app.py에서 입력 유무로 미리 결정하므로 여기서 rerun 하지 않는다.)
     """
     if not user_input:
@@ -61,22 +62,33 @@ def handle_user_turn(user_input: str | None) -> None:
 
     with st.chat_message("assistant"):
         try:
-            # 서버 의존성(langchain/chroma)은 첫 질문 때만 로드되도록 지연 import.
-            from server.service import generate_answer_stream
+            from server.service import generate_answer_stream, resolve_context, start_suggest_followups
 
-            stream = generate_answer_stream(
-                question=user_input, history=_history_payload()
-            )
-            # 검색 + 첫 토큰이 나올 때까지는 스피너로 대기(첫 조각을 미리 당겨온다).
+            history = _history_payload()
+
+            # 검색(context 확정)까지 스피너로 대기
             with st.spinner(SPINNER_TEXT):
+                context = resolve_context(user_input, history)
+                # context가 확정된 순간 백그라운드에서 추천 질문 생성 시작
+                suggest_future = start_suggest_followups(user_input, context)
+                stream = generate_answer_stream(question=user_input, context=context, history=history)
                 first_chunk = next(stream, "")
-            # 첫 조각 + 나머지를 타자기 효과로 실시간 출력(반환값은 완성된 전체 문자열).
+
+            # 답변 스트리밍 (추천 질문은 이 사이에 백그라운드에서 완성됨)
             answer = st.write_stream(
                 _typewriter(itertools.chain([first_chunk], stream))
             )
-        except Exception as exc:  # noqa: BLE001 - 사용자에게는 안내, 콘솔에는 원인 출력
+
+            # 답변을 먼저 세션에 저장한 뒤 추천 질문 갱신
+            st.session_state.messages.append({"role": "assistant", "content": answer})
+
+            suggestions = suggest_future.result(timeout=10)
+            if suggestions:
+                st.session_state.faq_questions = suggestions
+                st.rerun()
+
+        except Exception as exc:  # noqa: BLE001
             print(f"[chat] 답변 생성 실패: {exc!r}")
             answer = "⚠️ 답변을 생성하는 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요."
             st.markdown(answer)
-
-    st.session_state.messages.append({"role": "assistant", "content": answer})
+            st.session_state.messages.append({"role": "assistant", "content": answer})

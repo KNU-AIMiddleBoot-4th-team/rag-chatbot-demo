@@ -24,6 +24,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = []          # [{"role": "user"|"assistant", "content": str}]
 if "queued_question" not in st.session_state:
     st.session_state.queued_question = None  # FAQ 버튼으로 예약된 질문
+if "faq_questions" not in st.session_state:
+    st.session_state.faq_questions = None    # 동적 추천 질문 (None이면 고정 FAQ 사용)
 
 # ── 입력 먼저 읽기 ───────────────────────────────
 # 이번 렌더가 "대화 화면"인지 입력 유무로 미리 판단해야 레이아웃이 튀지 않고,

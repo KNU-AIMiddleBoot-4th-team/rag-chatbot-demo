@@ -3,7 +3,8 @@ RAG 기반 기업 맞춤형 스마트 사내위키 - 법률/노무 문서 검색
 ## 요구 사항
 
 - Python 3.10 이상
-- OpenAI API 키
+- **OpenRouter API 키** (`OPEN_ROUTER_KEY`) — LLM 답변 생성 및 임베딩에 사용 (OpenAI가 아니라 OpenRouter 경유)
+- **법제처 Open API 키** (`LAW_API_KEY`) — 벡터DB 최초 생성 시 법령 수집에 사용
 
 ## 설치 방법
 
@@ -36,6 +37,41 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### 4. 환경 변수(.env) 설정
+
+`.env.example`을 복사해 `.env`를 만들고 키를 채웁니다. (`.env`는 `.gitignore`에 포함되어 커밋되지 않습니다.)
+
+**Windows (PowerShell)**
+
+```powershell
+Copy-Item .env.example .env
+```
+
+**macOS / Linux**
+
+```bash
+cp .env.example .env
+```
+
+`.env`에서 최소 아래 두 값을 실제 키로 입력합니다.
+
+```
+OPEN_ROUTER_KEY=발급받은 OpenRouter 키
+LAW_API_KEY=발급받은 법제처 Open API 키
+```
+
+### 5. 벡터DB 생성 (최초 1회)
+
+법령을 수집·임베딩하여 `rag/chroma_db`에 벡터DB를 만듭니다. **벡터DB가 이미 있으면 생략**합니다.
+
+```bash
+python -m rag.embedder
+```
+
+- 기본 수집 법령: 근로기준법 · 최저임금법 · 근로자퇴직급여 보장법
+- 이 단계는 `OPEN_ROUTER_KEY`(임베딩)와 `LAW_API_KEY`(법령 수집)가 모두 필요합니다.
+- `chroma_db/`는 `.gitignore` 대상이라 클론에는 포함되지 않으므로, 새로 받은 환경에서는 이 단계를 한 번 실행해야 합니다.
+
 ## 실행 방법
 
 ```bash
@@ -43,6 +79,7 @@ streamlit run app.py
 ```
 
 실행 후 브라우저에서 `http://localhost:8501` 로 접속합니다.
+(질문에 답이 나오려면 위 4·5단계가 완료돼 있어야 합니다.)
 
 ## 주요 패키지
 
@@ -51,8 +88,9 @@ streamlit run app.py
 | streamlit | 1.59.0 | 웹 UI |
 | langchain | 1.3.11 | RAG 파이프라인 |
 | langchain-openai | 1.3.3 | OpenAI 연동 |
+| langchain-chroma | 1.1.0 | 벡터스토어 연동 |
 | chromadb | 1.5.9 | 벡터 데이터베이스 |
-| pypdf | 6.14.2 | PDF 문서 로드 |
+| requests | 2.34.2 | 법제처 Open API 호출 |
 
 ## 프로젝트 구조
 
@@ -62,11 +100,12 @@ UI / Data / Server 3계층으로 관심사를 분리합니다.
 rag-chatbot-demo/
 ├── app.py              # 진입점 (streamlit run app.py)
 ├── ui/                 # 🎨 UI 계층 - Streamlit 화면
-├── rag/                # 📚 Data 계층 - 문서 로드·청킹·벡터DB (RAG)
+├── rag/                # 📚 Data 계층 - 법령 수집·청킹·임베딩·검색 (RAG)
+│   └── chroma_db/      # 벡터DB (rag.embedder 로 생성, git 제외)
 ├── server/             # ⚙️ Server 계층 - LLM 호출·체인·설정
-├── data/               # 원본 문서 (PDF 등)
 ├── requirements.txt    # 의존성 목록
 ├── .gitignore
+├── .env.example        # 환경 변수 템플릿 (복사해서 .env 생성)
 ├── .env                # API 키 (직접 생성, git 제외)
 └── README.md
 ```

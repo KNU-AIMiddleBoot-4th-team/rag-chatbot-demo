@@ -104,7 +104,7 @@ def _chat_state_layout() -> str:
             width: min(720px, calc(100% - 32px)) !important;
             z-index: 997 !important;
             background: #ffffff !important;
-            padding: 10px 8px 18px 8px !important;
+            padding: 0px 8px 18px 8px !important;
         }
         /* ➕ 첨부 버튼을 기본 입력창(폭 704px) 좌측 안쪽, 전송버튼과 같은 높이에 겹쳐 배치한다. */
         .st-key-attach_area {

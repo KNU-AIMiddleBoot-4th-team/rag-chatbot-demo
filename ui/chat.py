@@ -1,9 +1,10 @@
 """대화 히스토리 렌더링과 사용자 질문 처리.
 
-실제 검색·답변 생성은 server.service(prepare_context / stream_answer)로 위임한다.
+실제 검색·답변 생성은 server.service.generate_answer_stream 으로 위임한다.
 (직접 OpenAI 호출이나 임베딩/검색을 이 프론트에서 수행하지 않는다.)
 """
 
+import itertools
 import time
 
 import streamlit as st
@@ -31,17 +32,12 @@ def _history_payload() -> list[dict[str, str]]:
     ]
 
 
-def _stream_answer(question: str, context: str):
-    """server 계층의 토큰 조각을 글자 단위로 잘게 나눠 타자기처럼 흘려준다.
+def _typewriter(chunks):
+    """토큰 조각들을 글자 단위로 잘게 나눠 타자기처럼 흘려준다.
 
     LLM 이 뱉는 속도 그대로면 너무 빨라서, 글자마다 짧은 지연을 준다.
     """
-    # 서버 의존성(langchain/chroma)은 첫 질문 때만 로드되도록 지연 import.
-    from server.service import stream_answer
-
-    for chunk in stream_answer(
-        question=question, context=context, history=_history_payload()
-    ):
+    for chunk in chunks:
         for char in chunk:
             yield char
             if STREAM_CHAR_DELAY:
@@ -65,13 +61,19 @@ def handle_user_turn(user_input: str | None) -> None:
 
     with st.chat_message("assistant"):
         try:
-            # 느린 검색 단계는 스피너로 감싸고,
-            from server.service import prepare_context
+            # 서버 의존성(langchain/chroma)은 첫 질문 때만 로드되도록 지연 import.
+            from server.service import generate_answer_stream
 
+            stream = generate_answer_stream(
+                question=user_input, history=_history_payload()
+            )
+            # 검색 + 첫 토큰이 나올 때까지는 스피너로 대기(첫 조각을 미리 당겨온다).
             with st.spinner(SPINNER_TEXT):
-                context = prepare_context(user_input, _history_payload())
-            # 최종 답변은 토큰 단위로 실시간 출력한다(반환값은 완성된 전체 문자열).
-            answer = st.write_stream(_stream_answer(user_input, context))
+                first_chunk = next(stream, "")
+            # 첫 조각 + 나머지를 타자기 효과로 실시간 출력(반환값은 완성된 전체 문자열).
+            answer = st.write_stream(
+                _typewriter(itertools.chain([first_chunk], stream))
+            )
         except Exception as exc:  # noqa: BLE001 - 사용자에게는 안내, 콘솔에는 원인 출력
             print(f"[chat] 답변 생성 실패: {exc!r}")
             answer = "⚠️ 답변을 생성하는 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요."

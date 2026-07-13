@@ -85,7 +85,7 @@ def format_history(history: list[dict[str, str]] | None) -> str:
 def _normalize_query(line: str) -> str:
     query = line.strip()
     query = re.sub(r"^\s*[-*]\s*", "", query)
-    query = re.sub(r"^\s*\d+[\).\s-]*", "", query)
+    query = re.sub(r"^\s*\d+[\).]\s+", "", query)
     query = query.strip().strip("\"'")
     return query.strip()
 

@@ -76,23 +76,55 @@ def render_attach() -> None:
 
 
 def render_focus_script() -> None:
-    """페이지 로드 시 입력창에 자동 포커스."""
+    """페이지 로드 시 입력창 포커스 + FAQ 위치를 입력창 높이에 맞게 동적 보정."""
     components.html(
         """
         <script>
         (function () {
+            var doc = window.parent.document;
+
+            /* ── 입력창 자동 포커스 ── */
             function focusChatInput() {
                 try {
-                    const doc = window.parent.document;
-                    const ta = doc.querySelector('[data-testid="stChatInput"] textarea');
-                    if (ta) {
-                        ta.focus();
-                    }
+                    var ta = doc.querySelector('[data-testid="stChatInput"] textarea');
+                    if (ta) ta.focus();
                 } catch (e) {}
             }
-            [50, 150, 350, 700].forEach(function (delay) {
-                setTimeout(focusChatInput, delay);
-            });
+            [50, 150, 350, 700].forEach(function (d) { setTimeout(focusChatInput, d); });
+
+            /* ── FAQ bottom을 입력창 컨테이너 높이에 맞게 동적 계산 ──
+               stBottomBlockContainer의 실제 렌더 높이를 읽어서
+               FAQ 영역의 bottom 값에 그 높이 + 여백(8px)을 반영한다.
+               DOM을 이동하지 않고 좌표만 조정하므로 안전하다.
+               셀렉터가 깨지거나 ResizeObserver가 없으면 조용히 종료한다. */
+            function attachFaqObserver() {
+                try {
+                    var bottomContainer = doc.querySelector('[data-testid="stBottomBlockContainer"]');
+                    var faq = doc.querySelector('.st-key-faq_area');
+                    if (!bottomContainer || !faq) return;
+                    if (typeof ResizeObserver === 'undefined') return;
+
+                    function updateFaqBottom() {
+                        try {
+                            var h = bottomContainer.getBoundingClientRect().height;
+                            faq.style.bottom = (h + 8) + 'px';
+                            /* 콘텐츠가 FAQ+입력창에 가리지 않도록 body padding-bottom도 갱신 */
+                            var faqH = faq.getBoundingClientRect().height;
+                            var blockContainer = doc.querySelector('.block-container');
+                            if (blockContainer) {
+                                blockContainer.style.paddingBottom = (h + faqH + 24) + 'px';
+                            }
+                        } catch (e) {}
+                    }
+
+                    var observer = new ResizeObserver(updateFaqBottom);
+                    observer.observe(bottomContainer);
+                    updateFaqBottom(); /* 최초 1회 즉시 적용 */
+                } catch (e) {}
+            }
+
+            /* DOM이 준비된 뒤 observer를 붙인다 */
+            [100, 400, 900].forEach(function (d) { setTimeout(attachFaqObserver, d); });
         })();
         </script>
         """,
